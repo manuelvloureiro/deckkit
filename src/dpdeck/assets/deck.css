@@ -1,0 +1,187 @@
+/* Palette
+   ink #14213D · body #465063 · muted #5F677A
+   paper #F6F4EE · paper-2 #ECE8DC · card #FFFDF8 · hairline #D9D4C5
+   D = blue #2A78D6 · D' = orange #EB6834 · privacy loss = violet #6250D6 (text #5443C7)
+   Type scale: 112 / 64 / 44 / 32 / 24 (28 only for superscripts and table text) */
+
+body {
+  font-family: 'IBM Plex Sans', Arial, sans-serif;
+  font-size: 32px;
+  line-height: 1.4;
+  color: #465063;
+}
+
+section {
+  padding: 128px;
+  background: #F6F4EE;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+h1, h2, h3 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-weight: 600;
+  color: #14213D;
+}
+h1 { font-size: 112px; line-height: 1.05; letter-spacing: -2px; }
+h2 { font-size: 64px; line-height: 1.1; letter-spacing: -0.5px; }
+h3 { font-size: 32px; line-height: 1.25; }
+
+/* Heading block: eyebrow + title, same place on every content slide */
+.head { display: flex; flex-direction: column; gap: 12px; }
+.eyebrow {
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #5443C7;
+}
+
+/* Body text */
+.say { font-size: 32px; line-height: 1.4; color: #465063; }
+.lead { font-family: 'Source Serif 4', Georgia, serif; font-size: 44px; line-height: 1.3; color: #14213D; }
+.note { font-size: 24px; line-height: 1.35; color: #5F677A; }
+.grow { flex: 1; }
+
+/* Plot slide: plot on the left, words on the right */
+.row { display: flex; gap: 64px; }
+.plot { position: relative; width: 1040px; height: 640px; flex: none; }
+.art { position: absolute; left: 0; top: 0; }
+.side { flex: 1; display: flex; flex-direction: column; gap: 32px; }
+
+/* Labels over a plot */
+.lbl { position: absolute; font-size: 24px; line-height: 1.2; color: #465063; white-space: nowrap; }
+.strong { color: #14213D; font-weight: 600; }
+.mth { font-family: 'Source Serif 4', Georgia, serif; color: #14213D; }
+.r { text-align: right; }
+.c { text-align: center; }
+
+/* Colour keys: a dot carries the identity, the words stay in ink */
+.key { display: flex; align-items: center; gap: 12px; }
+.key-text { font-size: 24px; line-height: 1.2; color: #14213D; white-space: nowrap; }
+.dot { width: 16px; height: 16px; border-radius: 50%; flex: none; }
+.dot-d { background: #2A78D6; }
+.dot-dp { background: #EB6834; }
+.dot-l { background: #6250D6; }
+
+/* Definition card */
+.def {
+  background: #FFFDF8;
+  border: 1px solid #D9D4C5;
+  border-radius: 8px;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Equations: a row of pieces, so superscripts and subscripts can sit off the baseline */
+.eq { display: flex; align-items: flex-start; }
+.eq p {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 44px;
+  line-height: 1.3;
+  color: #14213D;
+  white-space: nowrap;
+}
+.eq .sup { font-size: 28px; }
+.eq .sub { font-size: 28px; align-self: flex-end; }
+.eq-s p { font-size: 32px; }
+.eq-s .sup { font-size: 24px; }
+.eq-s .sub { font-size: 24px; }
+
+/* Cover */
+.cover { background: #14213D; gap: 32px; }
+.cover h1 { color: #F6F4EE; }
+.cover .eyebrow { color: #B4A9F5; }
+.cover .lead { color: #C5CCDA; }
+
+/* Accent statement slide */
+.accent { background: #4A3AB8; justify-content: center; gap: 40px; }
+.accent h2 { color: #FFFDF8; font-size: 112px; line-height: 1.05; letter-spacing: -2px; }
+.accent .eyebrow { color: #D6D0FA; }
+.accent .lead { color: #EDEBFB; }
+
+/* Cards */
+.cards { display: flex; gap: 32px; }
+.card {
+  flex: 1;
+  background: #FFFDF8;
+  border: 1px solid #D9D4C5;
+  border-radius: 8px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.card-ink { background: #14213D; border: 1px solid #14213D; }
+.tag { font-size: 24px; line-height: 1.2; font-weight: 600; color: #5F677A; }
+.big { font-family: 'Source Serif 4', Georgia, serif; font-size: 112px; line-height: 1.05; font-weight: 600; letter-spacing: -2px; color: #14213D; }
+.card-ink .tag { color: #C5CCDA; }
+.card-ink .big { color: #FFFDF8; }
+.card-ink .say { color: #C5CCDA; }
+
+/* Diagram nodes */
+.host { position: relative; }
+.node {
+  position: absolute;
+  box-sizing: border-box;
+  background: #FFFDF8;
+  border: 1px solid #D9D4C5;
+  border-radius: 8px;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Tables */
+table { font-size: 28px; color: #14213D; }
+.thead { background: #ECE8DC; }
+.paper-2 { background: #ECE8DC; }
+
+/* A number with its caption on one line */
+.stat { display: flex; align-items: baseline; gap: 20px; }
+.num { font-family: 'Source Serif 4', Georgia, serif; font-size: 44px; line-height: 1.3; font-weight: 600; color: #14213D; width: 104px; flex: none; }
+
+/* Recap cards: a small picture, a name, one sentence, the composition rule */
+.card-s { padding: 24px; }
+.mini { position: relative; width: 344px; height: 150px; flex: none; }
+
+/* Line swatches for dashed, dotted and solid curves in a key */
+.sw { width: 28px; height: 0; flex: none; border-top: 3px solid #EB6834; }
+.sw-dash { border-top-style: dashed; }
+.sw-dot { border-top-style: dotted; }
+.sw-solid { border-top-style: solid; }
+.sw-ink { border-top-color: #5F677A; }
+
+/* The definition, large, with a caption under each part */
+.terms { display: flex; justify-content: center; align-items: flex-start; gap: 40px; }
+.term { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.eq-l p { font-size: 64px; line-height: 1.2; }
+.eq-l .sup { font-size: 44px; }
+
+/* A published number with its caption */
+.pub { display: flex; align-items: baseline; gap: 20px; }
+.mid { font-family: 'Source Serif 4', Georgia, serif; font-size: 64px; line-height: 1.1; font-weight: 600; color: #14213D; }
+.card-ink .mid { color: #FFFDF8; }
+
+/* Two versions of one small dataset, side by side */
+.tbls { display: flex; gap: 32px; width: 1016px; flex: none; }
+.tbl { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+.hl-d { background: #DCE8F7; }
+.hl-dp { background: #FBE3D8; }
+
+/* Three small plots side by side, with one shared row of keys */
+.keys { display: flex; gap: 48px; }
+.panel { position: relative; width: 480px; height: 260px; flex: none; }
+
+/* Plot rows without tick labels on the left: the axis starts at the heading's edge and the text column is wider */
+.wide { gap: 40px; }
+.flush { margin-left: -64px; }
+
+/* Numbered objectives */
+.step { font-family: 'Source Serif 4', Georgia, serif; font-size: 64px; line-height: 1.1; font-weight: 600; color: #5443C7; }

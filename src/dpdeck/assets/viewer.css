@@ -1,0 +1,22 @@
+/* A minimal viewer for the single-file HTML deck: one 1920 x 1080 slide at a time, scaled to the
+   window. The first block restates the defaults that the Claude Slides page supplies. */
+* { margin: 0; }
+html, body { height: 100%; background: #0B1220; overflow: hidden; }
+body { font: 32px/1.2 sans-serif; }
+#stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: 0 0; }
+#stage > section {
+  position: absolute; inset: 0; width: 1920px; height: 1080px;
+  box-sizing: border-box; overflow: hidden; isolation: isolate;
+  opacity: 0; visibility: hidden; transition: opacity 0.3s;
+}
+#stage > section.current { opacity: 1; visibility: visible; }
+p, li, h1, h2, h3, td, th { overflow-wrap: break-word; text-wrap: pretty; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; border: solid #0003; border-width: 2px 0 0 2px; }
+th, td { padding: .35em .6em; text-align: left; border: solid #0003; border-width: 0 2px 2px 0; }
+.cover > svg, section > svg.art { z-index: -1; }
+@media print {
+  @page { size: 1920px 1080px; margin: 0; }
+  html, body { height: auto; overflow: visible; background: none; }
+  #stage { position: static; transform: none !important; height: auto; }
+  #stage > section { position: relative; opacity: 1; visibility: visible; break-after: page; }
+}
