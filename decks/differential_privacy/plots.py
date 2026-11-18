@@ -1,4 +1,4 @@
-"""Every plot of the deck, as a scene.
+"""Every plot of the differential privacy deck, as a scene.
 
 The running example is a survey count: 7 people say yes in D, and D' is D plus Alice, so 8. The
 sensitivity is 1 and eps is 1 throughout, which makes the Laplace scale 1 and, for the Gaussian
@@ -13,7 +13,10 @@ from __future__ import annotations
 import math
 from collections.abc import Callable
 
-from dpdeck.dpmath import (
+from deckkit.scene import Mark, Point, Scene, clip
+from deckkit.theme import AXIS, BLUE, DEEP, GREY, HAIRLINE, INK, MUTED, ORANGE, PAPER, PLOT_H, PLOT_W, VIOLET
+
+from .dpmath import (
     advanced_composition_epsilon,
     basic_composition_epsilon,
     gaussian_delta,
@@ -23,8 +26,6 @@ from dpdeck.dpmath import (
     normal_pdf,
     zcdp_epsilon,
 )
-from dpdeck.scene import Point, Scene, clip
-from dpdeck.theme import AXIS, BLUE, DEEP, GREY, HAIRLINE, INK, ORANGE, PAPER, PLOT_H, PLOT_W, VIOLET
 
 E = math.e
 COUNT_D, COUNT_DP = 7.0, 8.0
@@ -32,6 +33,13 @@ EPS = 1.0
 DELTA_1 = gaussian_delta(EPS, 1.0)  # sigma equal to the sensitivity
 DELTA_2 = gaussian_delta(2 * EPS, math.sqrt(2))  # the sum of two such releases
 TAIL_1 = loss_tail(EPS, 0.5, 1.0)
+
+# ---------------------------------------------------------------- what each colour means
+ON_D = Mark(BLUE)  # the release on D
+ON_DP = Mark(ORANGE)  # the release on D'
+LOSS = Mark(VIOLET)  # the privacy loss
+DASHED, DOTTED, SOLID = Mark(ORANGE, "dash"), Mark(ORANGE, "dot"), Mark(ORANGE, "solid")
+DOTTED_GREY, SOLID_GREY = Mark(MUTED, "dot"), Mark(MUTED, "solid")
 
 # ---------------------------------------------------------------- the shared frame
 BASE = 548.0  # height of the horizontal axis
@@ -89,8 +97,8 @@ def _count_labels(scene: Scene, top: float = 560) -> None:
 
 
 def _two_keys(scene: Scene, x: float, y: float) -> None:
-    scene.key(x, y, "d", "published count on *D*")
-    scene.key(x, y + 34, "dp", "published count on *D′*")
+    scene.key(x, y, ON_D, "published count on *D*")
+    scene.key(x, y + 34, ON_DP, "published count on *D′*")
 
 
 # ================================================================ Laplace noise, linear scale
@@ -144,7 +152,7 @@ def pure_dp() -> Scene:
     s.circle(xm, y_blue, 9, BLUE, PAPER, 3)
     s.label(64, 0, "how likely each published count is")
     _two_keys(s, 64, 52)
-    s.key(64, 120, "dash", "orange curve × 2.7")
+    s.key(64, 120, DASHED, "orange curve × 2.7")
     s.label(76, 396, "here blue is exactly 2.7 × orange", 344, "r", strong=True)
     s.label(664, 96, "**orange × 2.7**\ncovers blue everywhere", 340)
     s.label((X7 + X8) / 2 - 40, 502, "Δ", 80, "c", strong=True, math=True, size=32, line_height=1)
@@ -217,7 +225,7 @@ def log_scale() -> Scene:
     s.label(76, 112, "**left of 7 the gap is exactly ε**\nblue meets the lifted curve", 380)
     s.label(xb + 14, round((y_orange + y_lifted) / 2 - 12), "ε", 40, strong=True, math=True, size=32, line_height=1)
     _two_keys(s, 350, 436)
-    s.key(350, 504, "dash", "orange curve lifted by ε")
+    s.key(350, 504, DASHED, "orange curve lifted by ε")
     _count_labels(s)
     return s
 
@@ -249,7 +257,7 @@ def _gaussian_linear(aria: str, gap_opacity: float, leader: tuple[float, float, 
     s.segments([leader], INK, 2, round_cap=True)
     s.label(64, 0, "how likely each published count is")
     _two_keys(s, 64, 52)
-    s.key(64, 120, "dash", "orange curve × 2.7")
+    s.key(64, 120, DASHED, "orange curve × 2.7")
     return s
 
 
@@ -323,7 +331,7 @@ def gaussian_log() -> Scene:
     mid = (to_y(log_orange(peak_y)) + to_y(log_orange(peak_y) + EPS)) / 2
     s.label(peak_x + 14, round(mid - 15), "ε", 40, strong=True, math=True, size=32, line_height=1)
     _two_keys(s, 400, 400)
-    s.key(400, 468, "dash", "orange curve lifted by ε")
+    s.key(400, 468, DASHED, "orange curve lifted by ε")
     for v in marks:
         top = to_y(log_orange(v) + EPS) - 30 if v > 8 else to_y(log_orange(v)) + 4
         s.label(round(x_count(v) + 12), round(top), "ε", 30, strong=True, math=True)
@@ -446,10 +454,10 @@ def compose_pure() -> Scene:
     s.label(round(xs + 14), round((ya + yb) / 2 - 22), "ε", 40, strong=True, math=True, size=32, line_height=1)
     s.label(round(xs + 14), round((yb + yc) / 2 - 22), "ε", 40, strong=True, math=True, size=32, line_height=1)
     s.label(round(xr + 14), round((y3 + y3_lifted) / 2 - 10), "2ε", 60, strong=True, math=True, size=32, line_height=1)
-    s.key(404, 400, "d", "on *D*")
-    s.key(404, 434, "dot", "on *D′*, one release")
-    s.key(404, 468, "solid", "on *D′*, two releases: as if Δ + Δ")
-    s.key(404, 502, "dash", "that curve lifted by 2ε")
+    s.key(404, 400, ON_D, "on *D*")
+    s.key(404, 434, DOTTED, "on *D′*, one release")
+    s.key(404, 468, SOLID, "on *D′*, two releases: as if Δ + Δ")
+    s.key(404, 502, DASHED, "that curve lifted by 2ε")
     s.label(X7 - 50, 560, "*f*(*D*)", 100, "c", math=True)
     s.label(X8 - 50, 560, "+ Δ", 100, "c", math=True)
     s.label(X9 - 50, 560, "+ 2Δ", 100, "c", math=True)
@@ -499,11 +507,11 @@ def compose_approx() -> Scene:
     s.segments([(xa, 500, xc, 500), (xa, 492, xa, 508), (xc, 492, xc, 508)], INK, 3, round_cap=True)
     s.segments([(236, 432, 296, 502)], INK, 2, round_cap=True)
     s.label(64, 0, "how likely each total is")
-    s.key(64, 52, "d", "without Alice (*D*)")
-    s.key(64, 86, "dp", "with Alice (*D′*)")
-    s.key(64, 120, "dot-ink", "one release")
-    s.key(64, 154, "solid-ink", "two releases, added up")
-    s.key(64, 188, "dash", "orange × 7.4, for ε + ε = 2")
+    s.key(64, 52, ON_D, "without Alice (*D*)")
+    s.key(64, 86, ON_DP, "with Alice (*D′*)")
+    s.key(64, 120, DOTTED_GREY, "one release")
+    s.key(64, 154, SOLID_GREY, "two releases, added up")
+    s.key(64, 188, DASHED, "orange × 7.4, for ε + ε = 2")
     s.label(96, 372, f"**δ = {DELTA_2:.2f}**\nleft uncovered", 260)
     s.label(700, 326, "**wider**\nvariance 2*σ*²", 150)
     s.label((xa + xc) / 2 - 40, 508, "2Δ", 80, "c", strong=True, math=True, size=32, line_height=1)
@@ -556,7 +564,7 @@ def cdp() -> Scene:
         round_cap=True,
     )
     s.label(64, 0, "how often each loss occurs")
-    s.key(64, 200, "l", "actual privacy loss")
+    s.key(64, 200, LOSS, "actual privacy loss")
     s.label(640, 110, "Gaussian yardstick", 380, strong=True)
     s.label(640, 144, "mean *μ*, standard deviation *τ*", 380)
     s.label(518, 222, "*τ*", 80, "c", strong=True, math=True, size=32)
@@ -749,22 +757,3 @@ def cover_art() -> Scene:
         points = [(px, 1080 - 430 * math.exp(-((px - centre) ** 2) / (2 * 260**2))) for px in linspace(0, 1920, 48)]
         s.filled_line(points, color, 0.14, width=4)
     return s
-
-
-# Plots that can be exported on their own, by name.
-STANDALONE: dict[str, Callable[[], Scene]] = {
-    "sensitivity": sensitivity,
-    "pure-dp": pure_dp,
-    "log-scale": log_scale,
-    "gaussian": gaussian,
-    "gaussian-log": gaussian_log,
-    "approx-dp": approx_dp,
-    "loss-distribution": loss_distribution,
-    "many-pairs": many_pairs,
-    "compose-pure": compose_pure,
-    "compose-approx": compose_approx,
-    "cdp": cdp,
-    "zcdp": zcdp,
-    "composition": composition,
-    "cost": cost,
-}

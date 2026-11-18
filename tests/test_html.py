@@ -2,17 +2,18 @@ import json
 import re
 from pathlib import Path
 
-from dpdeck.content import build_deck
-from dpdeck.model import CardsSlide, DiagramSlide, PlotSlide
-from dpdeck.render_html import slide_html, write_artifact, write_standalone
-from dpdeck.scene import Scene
+from deckkit.model import CardsSlide, Cover, Deck, DiagramSlide, PlotSlide
+from deckkit.render_html import slide_html, write_artifact, write_standalone
+from deckkit.scene import Scene
 
 
-def scenes() -> list[Scene]:
+def scenes(deck: Deck) -> list[Scene]:
     found: list[Scene] = []
-    for slide in build_deck().slides:
+    for slide in deck.slides:
         if isinstance(slide, PlotSlide):
             found.append(slide.scene)
+        elif isinstance(slide, Cover) and slide.art:
+            found.append(slide.art)
         elif isinstance(slide, CardsSlide):
             found += [card.scene for card in slide.cards if card.scene]
         elif isinstance(slide, DiagramSlide):
@@ -20,12 +21,11 @@ def scenes() -> list[Scene]:
     return found
 
 
-def test_artifact_folder(tmp_path: Path) -> None:
-    deck = build_deck()
+def test_artifact_folder(deck: Deck, tmp_path: Path) -> None:
     write_artifact(deck, tmp_path)
     index = json.loads((tmp_path / "project" / "deck.json").read_text("utf-8"))
     assert index["order"] == [slide.id for slide in deck.slides]
-    assert len(index["order"]) == 22
+    assert len(set(index["order"])) == len(deck.slides)
     for slide_id in index["order"]:
         html = (tmp_path / "project" / "slides" / f"{slide_id}.html").read_text("utf-8")
         assert html.startswith(f'<section id="{slide_id}"')
@@ -34,12 +34,15 @@ def test_artifact_folder(tmp_path: Path) -> None:
     assert all(section["start"] in index["order"] for section in index["sections"].values())
 
 
-def test_at_most_24_pinned_labels_per_plot() -> None:
-    assert max(len(scene.labels) for scene in scenes()) <= 24
+def test_at_most_24_pinned_labels_per_plot(deck: Deck) -> None:
+    assert max(len(scene.labels) for scene in scenes(deck)) <= 24
 
 
-def test_standalone_file_draws_arrows_itself(tmp_path: Path) -> None:
-    html = write_standalone(build_deck(), tmp_path / "deck.html").read_text("utf-8")
-    assert html.count("<section ") == 22
-    assert "x-connector" not in html and "marker-end" in html
-    assert "<x-connector" in slide_html(build_deck().slides[3])
+def test_standalone_file_draws_arrows_itself(deck: Deck, tmp_path: Path) -> None:
+    html = write_standalone(deck, tmp_path / "deck.html").read_text("utf-8")
+    assert html.count("<section ") == len(deck.slides)
+    assert "x-connector" not in html
+    for slide in deck.slides:
+        if isinstance(slide, DiagramSlide):
+            assert "marker-end" in html
+            assert "<x-connector" in slide_html(slide)

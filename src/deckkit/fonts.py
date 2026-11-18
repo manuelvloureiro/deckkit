@@ -22,8 +22,8 @@ from pathlib import Path
 
 from PIL import ImageFont, features
 
-from dpdeck.richtext import NBSP, Run
-from dpdeck.theme import Family, Fonts, TextStyle
+from deckkit.richtext import NBSP, Run
+from deckkit.theme import Family, Fonts, TextStyle
 
 PLEX = "https://github.com/IBM/plex/raw/master/packages/plex-sans/fonts/complete/ttf/"
 SERIF = "https://github.com/adobe-fonts/source-serif/raw/release/TTF/"
@@ -56,7 +56,7 @@ def download(dest: Path) -> list[Path]:
         target = dest / name
         if target.exists():
             continue
-        request = urllib.request.Request(url, headers={"User-Agent": "dpdeck"})
+        request = urllib.request.Request(url, headers={"User-Agent": "deckkit"})
         with urllib.request.urlopen(request, timeout=60) as response:
             target.write_bytes(response.read())
         fetched.append(target)
@@ -121,7 +121,7 @@ class Measurer:
             self._warn(
                 name,
                 f"font '{name}' not found: measuring with '{found.split(',')[0]}' instead. "
-                "Run `dpdeck fonts` to download the deck's fonts.",
+                "Run `deckkit fonts` to download the fonts.",
             )
         return file or None
 

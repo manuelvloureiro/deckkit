@@ -1,6 +1,6 @@
 """Standalone SVG and PNG output of a scene.
 
-Two uses. `plots` exports each plot as a file, with its labels. The PowerPoint output calls
+Two uses. The `plots` command exports each plot as a file, with its labels. The PowerPoint output calls
 `raster` for shapes that PowerPoint cannot draw.
 
 Every image covers the whole canvas of its scene and has no background. It is never cropped to
@@ -13,25 +13,14 @@ import shutil
 import subprocess
 from collections.abc import Sequence
 
-from dpdeck.fonts import Measurer
-from dpdeck.render_html import graphic_svg
-from dpdeck.richtext import escape, parse_lines
-from dpdeck.scene import Circle, Key, KeyKind, Label, Path, RawSvg, Scene
-from dpdeck.theme import BLUE, BODY, INK, MUTED, ORANGE, STYLES, VIOLET, TextStyle
+from deckkit.fonts import Measurer
+from deckkit.render_html import graphic_svg
+from deckkit.richtext import escape, parse_lines
+from deckkit.scene import Circle, Key, Label, Path, RawSvg, Scene
+from deckkit.theme import BODY, INK, STYLES, TextStyle
 
 Graphic = Path | Circle | RawSvg
-KEY_COLOR: dict[KeyKind, str] = {
-    "d": BLUE,
-    "dp": ORANGE,
-    "l": VIOLET,
-    "dash": ORANGE,
-    "dot": ORANGE,
-    "solid": ORANGE,
-    "dot-ink": MUTED,
-    "solid-ink": MUTED,
-}
-KEY_DASH: dict[KeyKind, str | None] = {"dash": "8 5", "dot": "0.1 6", "dot-ink": "0.1 6"}
-DOT_KEYS = ("d", "dp", "l")
+KEY_DASH = {"dash": "8 5", "guide": "8 5", "dot": "0.1 6"}  # the short line of a key is drawn finer
 KEY_TEXT_OFFSET = {True: 28.0, False: 40.0}  # after a dot, after a line swatch
 
 
@@ -83,12 +72,12 @@ def _label_svg(label: Label, measurer: Measurer) -> list[str]:
 def _key_svg(key: Key, measurer: Measurer) -> list[str]:
     style = STYLES["key"]
     middle = key.y + style.line / 2
-    color = KEY_COLOR[key.kind]
-    is_dot = key.kind in DOT_KEYS
+    color = key.mark.color
+    is_dot = key.mark.line is None
     if is_dot:
         mark = f'<circle cx="{key.x + 8:.1f}" cy="{middle:.1f}" r="8" fill="{color}"/>'
     else:
-        dash = KEY_DASH.get(key.kind)
+        dash = KEY_DASH.get(key.mark.line or "solid")
         extra = f' stroke-dasharray="{dash}" stroke-linecap="round"' if dash else ""
         mark = (
             f'<path d="M{key.x:.1f} {middle:.1f} L{key.x + 28:.1f} {middle:.1f}" stroke="{color}" '

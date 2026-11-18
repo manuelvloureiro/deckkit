@@ -12,7 +12,7 @@ from importlib import resources
 from pathlib import Path as FilePath
 from typing import Literal
 
-from dpdeck.model import (
+from deckkit.model import (
     Block,
     Card,
     CardsSlide,
@@ -33,22 +33,13 @@ from dpdeck.model import (
     TablesSlide,
     Tight,
 )
-from dpdeck.richtext import equation_html, escape, to_html
-from dpdeck.scene import Circle, Key, KeyKind, Label, Path, RawSvg, Scene
-from dpdeck.theme import MUTED
+from deckkit.richtext import equation_html, escape, to_html
+from deckkit.scene import Circle, Key, Label, Mark, Path, RawSvg, Scene
+from deckkit.theme import MUTED
 
 Connectors = Literal["x-connector", "svg"]
 
-KEY_CLASS: dict[KeyKind, str] = {
-    "d": "dot dot-d",
-    "dp": "dot dot-dp",
-    "l": "dot dot-l",
-    "dash": "sw sw-dash",
-    "dot": "sw sw-dot",
-    "solid": "sw sw-solid",
-    "dot-ink": "sw sw-dot sw-ink",
-    "solid-ink": "sw sw-solid sw-ink",
-}
+SWATCH_CLASS = {"solid": "sw sw-solid", "dash": "sw sw-dash", "guide": "sw sw-dash", "dot": "sw sw-dot"}
 DASH_ARRAY = {"solid": None, "dash": "12 8", "dot": "1 8", "guide": "6 8"}
 FACES = {
     "source-serif-4": {
@@ -116,10 +107,14 @@ def _label_html(label: Label) -> str:
     return f'<p class="{" ".join(classes)}" style="{"; ".join(style)}">{to_html(label.text)}</p>'
 
 
-def key_html(kind: KeyKind, text: str, position: tuple[float, float] | None = None, tag: str = "p") -> str:
+def key_html(mark: Mark, text: str, position: tuple[float, float] | None = None, tag: str = "p") -> str:
     style = f' style="position:absolute; left:{_n(position[0])}px; top:{_n(position[1])}px"' if position else ""
     cls = ' class="key-text"' if tag == "p" else ""
-    return f'<div class="key"{style}><div class="{KEY_CLASS[kind]}"></div><{tag}{cls}>{to_html(text)}</{tag}></div>'
+    if mark.line is None:
+        swatch = f'<div class="dot" style="background:{mark.color}"></div>'
+    else:
+        swatch = f'<div class="{SWATCH_CLASS[mark.line]}" style="border-top-color:{mark.color}"></div>'
+    return f'<div class="key"{style}>{swatch}<{tag}{cls}>{to_html(text)}</{tag}></div>'
 
 
 def scene_html(scene: Scene, art: bool = True) -> str:
@@ -137,7 +132,7 @@ def scene_html(scene: Scene, art: bool = True) -> str:
     lines.append("</svg>")
     for item in scene.labels:
         if isinstance(item, Key):
-            lines.append(key_html(item.kind, item.text, (item.x, item.y)))
+            lines.append(key_html(item.mark, item.text, (item.x, item.y)))
         else:
             lines.append(_label_html(item))
     return "\n".join(lines)
@@ -205,15 +200,14 @@ def _card_html(card: Card, compact: bool) -> str:
 
 
 def _data_table_html(table: DataTable) -> str:
-    lines = ['<div class="tbl">', key_html(table.key.kind, table.key.text), "<table>"]
+    lines = ['<div class="tbl">', key_html(table.key.mark, table.key.text), "<table>"]
     lines.append('<tr class="thead">' + "".join(f"<th>{to_html(t)}</th>" for t in table.header) + "</tr>")
     for index, row in enumerate(table.rows):
-        cls = ' class="hl-dp"' if index == table.highlight else ""
+        cls = ' class="hl"' if index == table.highlight else ""
         lines.append(f"<tr{cls}>" + "".join(f"<td>{to_html(t)}</td>" for t in row) + "</tr>")
     lines.append("</table>")
     lines.append(
-        f'<div class="pub"><p class="mid">{escape(table.published)}</p>'
-        f'<p class="say">{to_html(table.caption)}</p></div>'
+        f'<div class="pub"><p class="mid">{escape(table.value)}</p><p class="say">{to_html(table.caption)}</p></div>'
     )
     lines.append("</div>")
     return "\n".join(lines)
@@ -258,15 +252,14 @@ def _arrows_html(slide: DiagramSlide, connectors: Connectors) -> str:
 def slide_html(slide: Slide, connectors: Connectors = "x-connector") -> str:
     """The `<section>` of one slide."""
     if isinstance(slide, Cover):
-        body = "\n".join(
-            [
-                scene_html(slide.art),
-                f'<p class="eyebrow">{escape(slide.eyebrow)}</p>',
-                f"<h1>{to_html(slide.title)}</h1>",
-                f'<p class="lead">{to_html(slide.lead)}</p>',
-            ]
-        )
-        return _section(slide.id, body, "cover")
+        parts = [
+            f'<p class="eyebrow">{escape(slide.eyebrow)}</p>',
+            f"<h1>{to_html(slide.title)}</h1>",
+            f'<p class="lead">{to_html(slide.lead)}</p>',
+        ]
+        if slide.art:
+            parts.insert(0, scene_html(slide.art))
+        return _section(slide.id, "\n".join(parts), "cover")
     if isinstance(slide, Statement):
         body = "\n".join(
             [
@@ -296,9 +289,10 @@ def slide_html(slide: Slide, connectors: Connectors = "x-connector") -> str:
     if isinstance(slide, CardsSlide):
         lines = [head]
         if slide.keys:
-            lines += ['<div class="keys">', *[key_html(k.kind, k.text) for k in slide.keys], "</div>"]
+            lines += ['<div class="keys">', *[key_html(k.mark, k.text) for k in slide.keys], "</div>"]
         lines += ['<div class="cards">', *[_card_html(c, slide.compact) for c in slide.cards], "</div>"]
-        lines.append(f'<p class="lead">{to_html(slide.lead)}</p>')
+        if slide.lead:
+            lines.append(f'<p class="lead">{to_html(slide.lead)}</p>')
         return _section(slide.id, "\n".join(lines), "" if slide.background == "paper" else slide.background)
     if isinstance(slide, TablesSlide):
         body = "\n".join(
@@ -343,13 +337,15 @@ def _table_slide_body(slide: TableSlide, head: str) -> str:
         + "</tr>"
     )
     lines += ["<tr>" + "".join(f"<td>{to_html(t)}</td>" for t in row) + "</tr>" for row in slide.rows]
-    lines += ["</table>", '<div class="grow"></div>', _def_html(slide.footer)]
+    lines.append("</table>")
+    if slide.footer:
+        lines += ['<div class="grow"></div>', _def_html(slide.footer)]
     return "\n".join(lines)
 
 
 # ---------------------------------------------------------------- outputs
 def _asset(name: str) -> str:
-    return resources.files("dpdeck").joinpath("assets", name).read_text(encoding="utf-8")
+    return resources.files("deckkit").joinpath("assets", name).read_text(encoding="utf-8")
 
 
 def deck_index(deck: Deck) -> dict[str, object]:

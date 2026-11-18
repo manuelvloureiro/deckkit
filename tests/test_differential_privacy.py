@@ -2,8 +2,22 @@ import math
 
 import pytest
 
-from dpdeck import plots
-from dpdeck.dpmath import gaussian_delta, gaussian_epsilon, laplace_pdf, loss_tail, normal_cdf
+from deckkit.fonts import Measurer
+from deckkit.model import PlotSlide
+from deckkit.render_pptx import PptxRenderer
+from deckkit.theme import Fonts
+from differential_privacy import build_deck, plots
+from differential_privacy.dpmath import gaussian_delta, gaussian_epsilon, laplace_pdf, loss_tail, normal_cdf
+
+
+def test_the_deck_is_native_powerpoint() -> None:
+    deck = build_deck()
+    renderer = PptxRenderer(Measurer(Fonts()), plots="native")
+    renderer.build(deck)
+    assert len(deck.slides) == 22
+    assert renderer.images == 0  # nothing in this deck needs an image
+    assert sum(isinstance(slide, PlotSlide) and slide.flush for slide in deck.slides) == 13
+    assert len(deck.plots) == 14
 
 
 def test_numbers_quoted_on_the_slides() -> None:

@@ -26,12 +26,14 @@ CARD = "#FFFDF8"
 HAIRLINE = "#D9D4C5"
 ACCENT = "#5443C7"
 
-BLUE = "#2A78D6"  # the release on D
-ORANGE = "#EB6834"  # the release on D'
-VIOLET = "#6250D6"  # privacy loss
-DEEP = "#4A3AB8"  # delta: the uncovered part
+# Colours for what a plot shows. A deck gives each one a meaning and keeps it on every slide.
+BLUE = "#2A78D6"
+ORANGE = "#EB6834"
+VIOLET = "#6250D6"
+DEEP = "#4A3AB8"  # a darker violet, also the background of statement slides
 AXIS = "#8A8F98"
 GREY = "#7B8494"
+HIGHLIGHT = "#FBE3D8"  # the row picked out in a small table
 
 Family = Literal["sans", "serif"]
 

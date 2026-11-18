@@ -34,8 +34,8 @@ from pptx.oxml import parse_xml
 from pptx.oxml.ns import qn
 from pptx.util import Emu, Pt
 
-from dpdeck.fonts import Measurer
-from dpdeck.model import (
+from deckkit.fonts import Measurer
+from deckkit.model import (
     Block,
     Card,
     CardsSlide,
@@ -56,16 +56,17 @@ from dpdeck.model import (
     TablesSlide,
     Tight,
 )
-from dpdeck.render_svg import DOT_KEYS, KEY_COLOR, KEY_TEXT_OFFSET, graphics_svg, label_style, raster
-from dpdeck.richtext import Run, parse, parse_lines, plain
-from dpdeck.scene import Align, Circle, Dash, Key, KeyKind, Label, Path, RawSvg, Scene
-from dpdeck.theme import (
+from deckkit.render_svg import KEY_TEXT_OFFSET, graphics_svg, label_style, raster
+from deckkit.richtext import Run, parse, parse_lines, plain
+from deckkit.scene import Align, Circle, Dash, Key, Label, Mark, Path, RawSvg, Scene
+from deckkit.theme import (
     ACCENT_TEXT,
     BACKGROUNDS,
     CARD,
     COVER_TEXT,
     GAP,
     HAIRLINE,
+    HIGHLIGHT,
     INK,
     MARGIN,
     MUTED,
@@ -89,7 +90,6 @@ P_NS = "http://schemas.openxmlformats.org/presentationml/2006/main"
 NO_STYLE_TABLE = "{2D5ABB26-0587-4C30-8999-92F81FD0307C}"
 ALIGN = {"l": PP_ALIGN.LEFT, "c": PP_ALIGN.CENTER, "r": PP_ALIGN.RIGHT}
 DASH = {"dash": MSO_LINE.DASH, "guide": MSO_LINE.DASH, "dot": MSO_LINE.ROUND_DOT}
-KEY_DASH: dict[KeyKind, Dash] = {"dash": "dash", "dot": "dot", "dot-ink": "dot"}
 EQ_STYLE = {"s": "eq-s", "m": "eq", "l": "eq-l"}
 TABLE_ROW = 60.8  # one text line of the table style, its padding and a border
 NEAR_MISS = 0.03  # how far a single line may run past its column before it is wrapped
@@ -297,28 +297,28 @@ class Canvas:
         self,
         x: float,
         y: float,
-        kind: KeyKind,
+        mark: Mark,
         text: str,
         style: str = "key",
         shapes: Any = None,
         draw: bool = True,
     ) -> float:
-        """A dot or a line swatch, then its text. Returns the total width; `draw=False` only measures."""
+        """A dot or a short line, then its text. Returns the total width; `draw=False` only measures."""
         st = STYLES[style]
-        offset = KEY_TEXT_OFFSET[kind in DOT_KEYS]
+        offset = KEY_TEXT_OFFSET[mark.line is None]
         total = offset + self.width(text, st)
         if not draw:
             return total
         target = self.shapes if shapes is None else shapes
         middle = y + st.line / 2
-        if kind in DOT_KEYS:
+        if mark.line is None:
             dot = target.add_shape(MSO_SHAPE.OVAL, emu(x), emu(middle - 8), emu(16), emu(16))
             _unstyle(dot)
-            _set_fill(dot, KEY_COLOR[kind])
+            _set_fill(dot, mark.color)
             _set_line(dot, None, 0)
             dot.name = "key"
         else:
-            self.segment(x, middle, x + 28, middle, KEY_COLOR[kind], 3, KEY_DASH.get(kind, "solid"), shapes=target)
+            self.segment(x, middle, x + 28, middle, mark.color, 3, mark.line, shapes=target)
         self.one_line(x + offset, y, text, st, shapes=target)
         return total
 
@@ -354,7 +354,7 @@ class Canvas:
         flush()
         for item in scene.labels:
             if isinstance(item, Key):
-                self.key(ox + item.x, oy + item.y, item.kind, item.text, shapes=group.shapes)
+                self.key(ox + item.x, oy + item.y, item.mark, item.text, shapes=group.shapes)
             else:
                 self._label(group.shapes, item, ox, oy)
 
@@ -491,7 +491,7 @@ class Canvas:
         style = STYLES["table"]
         for r, row in enumerate([header, *rows]):
             table.rows[r].height = emu(TABLE_ROW)
-            fill = header_fill if r == 0 else ("#FBE3D8" if highlight == r - 1 else None)
+            fill = header_fill if r == 0 else (HIGHLIGHT if highlight == r - 1 else None)
             for c, text in enumerate(row):
                 cell = table.cell(r, c)
                 cell.margin_left = cell.margin_right = emu(16.8)
@@ -585,7 +585,8 @@ class PptxRenderer:
 
     # ------------------------------------------------------------------ slide types
     def _cover(self, c: Canvas, slide: Cover) -> None:
-        c.scene(slide.art, 0, 0, "cover art")
+        if slide.art:
+            c.scene(slide.art, 0, 0, "cover art")
         y = MARGIN + c.text(MARGIN, MARGIN, CONTENT_W, slide.eyebrow, "eyebrow", color=COVER_TEXT["eyebrow"]) + 32
         y += c.text(MARGIN, y, CONTENT_W, slide.title, "h1", color=COVER_TEXT["h1"], into=c.shapes.title) + 32
         c.text(MARGIN, y, CONTENT_W, slide.lead, "lead", color=COVER_TEXT["lead"])
@@ -614,7 +615,7 @@ class PptxRenderer:
         if slide.keys:
             x = float(MARGIN)
             for key in slide.keys:
-                x += c.key(x, y, key.kind, key.text) + 48
+                x += c.key(x, y, key.mark, key.text) + 48
             y += STYLES["key"].line + GAP
         count = len(slide.cards)
         width = (CONTENT_W - 32 * (count - 1)) / count
@@ -625,7 +626,8 @@ class PptxRenderer:
             x = MARGIN + index * (width + 32)
             c.card(x, y, width, height)
             self._card(c, card, x + pad, y + pad, inner, y + height - pad)
-        c.text(MARGIN, y + height + GAP, CONTENT_W, slide.lead, "lead")
+        if slide.lead:
+            c.text(MARGIN, y + height + GAP, CONTENT_W, slide.lead, "lead")
 
     @staticmethod
     def _card_parts(c: Canvas, card: Card, inner: float) -> list[float]:
@@ -677,12 +679,12 @@ class PptxRenderer:
 
     @staticmethod
     def _data_table(c: Canvas, table: DataTable, x: float, y: float, width: float) -> None:
-        c.key(x, y, table.key.kind, table.key.text)
+        c.key(x, y, table.key.mark, table.key.text)
         y += STYLES["key"].line + 20
         y += c.table(x, y, width, table.header, table.rows, (0.54, 0.46), table.highlight) + 20
         mid, say = STYLES["mid"], STYLES["say"]
-        number_w = c.width(table.published, mid)
-        c.text(x, y, number_w * 1.05 + 8, table.published, mid, wrap=False)
+        number_w = c.width(table.value, mid)
+        c.text(x, y, number_w * 1.05 + 8, table.value, mid, wrap=False)
         c.text(x + number_w + 20, y + c.m.baseline(mid) - c.m.baseline(say), width - number_w - 20, table.caption, say)
 
     def _diagram(self, c: Canvas, slide: DiagramSlide) -> None:
@@ -732,7 +734,7 @@ class PptxRenderer:
         parts.append(c.lines(node.note, note, inner) * note.line)
         cursor = y + (node.height - sum(parts) - 8 * (len(parts) - 1)) / 2
         if node.scene:
-            c.scene(node.scene, x + 33, cursor, "picture: outputs")
+            c.scene(node.scene, x + 33, cursor, f"picture: {plain(node.title or node.note)}")
             cursor += node.scene.height + 8
         if node.title:
             if node.key:
@@ -745,8 +747,9 @@ class PptxRenderer:
     def _table(self, c: Canvas, slide: TableSlide) -> None:
         y = MARGIN + c.head(slide.eyebrow, slide.title) + GAP
         c.table(MARGIN, y, CONTENT_W, slide.header, slide.rows, [w / 100 for w in slide.widths])
-        height = c.block_height(slide.footer, CONTENT_W)
-        c.block(slide.footer, MARGIN, BOTTOM - height, CONTENT_W)
+        if slide.footer:
+            height = c.block_height(slide.footer, CONTENT_W)
+            c.block(slide.footer, MARGIN, BOTTOM - height, CONTENT_W)
 
 
 def slide_titles(deck: Deck) -> list[str]:

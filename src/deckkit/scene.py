@@ -1,7 +1,7 @@
 """A plot as data: shapes and labels on a fixed canvas, with no output format in it.
 
-`plots.py` builds scenes; the renderers turn a scene into inline SVG for the HTML deck, a
-standalone SVG or PNG, or native PowerPoint shapes.
+A deck builds scenes; the renderers turn a scene into inline SVG for the HTML deck, a standalone
+SVG or PNG, or native PowerPoint shapes.
 """
 
 from __future__ import annotations
@@ -13,7 +13,6 @@ from typing import Literal
 Point = tuple[float, float]
 Dash = Literal["solid", "dash", "dot", "guide"]
 Align = Literal["l", "c", "r"]
-KeyKind = Literal["d", "dp", "l", "dash", "dot", "solid", "dot-ink", "solid-ink"]
 
 
 @dataclass(frozen=True)
@@ -60,12 +59,24 @@ class Label:
 
 
 @dataclass(frozen=True)
+class Mark:
+    """What a legend entry shows before its text, in the colour of what it names.
+
+    Without `line` it is a dot. With `line` it is a short line drawn with that dash, for telling
+    apart curves of one colour.
+    """
+
+    color: str
+    line: Dash | None = None
+
+
+@dataclass(frozen=True)
 class Key:
-    """A legend entry: a dot or a line swatch, then its text."""
+    """A legend entry: a mark, then its text."""
 
     x: float
     y: float
-    kind: KeyKind
+    mark: Mark
     text: str
 
 
@@ -152,8 +163,8 @@ class Scene:
     ) -> None:
         self.items.append(Label(x, y, text, width, align, strong, math, size, line_height))
 
-    def key(self, x: float, y: float, kind: KeyKind, text: str) -> None:
-        self.items.append(Key(x, y, kind, text))
+    def key(self, x: float, y: float, mark: Mark, text: str) -> None:
+        self.items.append(Key(x, y, mark, text))
 
     # ------------------------------------------------------------------ views
     @property

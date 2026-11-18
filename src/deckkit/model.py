@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
-from dpdeck.scene import KeyKind, Scene
+from deckkit.scene import Mark, Scene
 
 
 # ---------------------------------------------------------------- blocks of a text column
@@ -62,18 +62,20 @@ Block = Say | Note | Def | Tight
 class KeyLine:
     """A legend entry outside a plot."""
 
-    kind: KeyKind
+    mark: Mark
     text: str
 
 
 # ---------------------------------------------------------------- slides
 @dataclass(frozen=True)
 class Cover:
+    """The opening slide. `art` is a drawing of the full slide size, painted behind the text."""
+
     id: str
     eyebrow: str
     title: str
     lead: str
-    art: Scene
+    art: Scene | None = None
 
 
 @dataclass(frozen=True)
@@ -121,7 +123,7 @@ class CardsSlide:
     eyebrow: str
     title: str
     cards: tuple[Card, ...]
-    lead: str
+    lead: str | None = None
     keys: tuple[KeyLine, ...] = ()
     compact: bool = False
     background: Literal["paper", "paper-2"] = "paper"
@@ -129,18 +131,23 @@ class CardsSlide:
 
 @dataclass(frozen=True)
 class DataTable:
-    """One version of the small dataset, with the number published from it."""
+    """A small table under its key, with one large value and its caption below.
+
+    `highlight` is the index of a row to pick out.
+    """
 
     key: KeyLine
     header: tuple[str, ...]
     rows: tuple[tuple[str, ...], ...]
-    published: str
+    value: str
     caption: str
     highlight: int | None = None
 
 
 @dataclass(frozen=True)
 class TablesSlide:
+    """Small tables side by side on the left, to compare them, and an explanation on the right."""
+
     id: str
     eyebrow: str
     title: str
@@ -158,7 +165,7 @@ class Node:
     height: float
     note: str
     title: str | None = None
-    key: KeyKind | None = None
+    key: Mark | None = None
     scene: Scene | None = None
 
 
@@ -168,7 +175,7 @@ class Term:
 
     eq: str
     caption: str
-    key: KeyKind | None = None
+    key: Mark | None = None
 
 
 @dataclass(frozen=True)
@@ -188,7 +195,10 @@ class DiagramSlide:
 
 @dataclass(frozen=True)
 class TableSlide:
-    """A full-width table with a definition card pinned to the bottom of the slide."""
+    """A full-width table, with an optional definition card pinned to the bottom of the slide.
+
+    `widths` are the columns' shares of the width, in percent.
+    """
 
     id: str
     eyebrow: str
@@ -196,7 +206,7 @@ class TableSlide:
     header: tuple[str, ...]
     widths: tuple[int, ...]
     rows: tuple[tuple[str, ...], ...]
-    footer: Def
+    footer: Def | None = None
 
 
 Slide = Cover | Statement | PlotSlide | CardsSlide | TablesSlide | DiagramSlide | TableSlide
@@ -204,6 +214,8 @@ Slide = Cover | Statement | PlotSlide | CardsSlide | TablesSlide | DiagramSlide 
 
 @dataclass(frozen=True)
 class Section:
+    """A run of slides: its key, the id of its first slide, and what it covers."""
+
     key: str
     start: str
     description: str
@@ -214,3 +226,8 @@ class Deck:
     title: str
     slides: tuple[Slide, ...]
     sections: tuple[Section, ...] = field(default=())
+
+    @property
+    def plots(self) -> dict[str, Scene]:
+        """The plot of every plot slide, by slide id. These are what `plots` exports."""
+        return {slide.id: slide.scene for slide in self.slides if isinstance(slide, PlotSlide)}

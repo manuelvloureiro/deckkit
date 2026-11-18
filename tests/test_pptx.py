@@ -6,12 +6,11 @@ import pytest
 from PIL import Image
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
-from dpdeck.content import build_deck
-from dpdeck.fonts import Measurer
-from dpdeck.model import Deck, PlotSlide
-from dpdeck.render_pptx import PptxRenderer, slide_titles
-from dpdeck.scene import Scene
-from dpdeck.theme import BLUE, PLOT_H, PLOT_W, Fonts
+from deckkit.fonts import Measurer
+from deckkit.model import Deck, PlotSlide
+from deckkit.render_pptx import PptxRenderer, slide_titles
+from deckkit.scene import Scene
+from deckkit.theme import BLUE, PLOT_H, PLOT_W, Fonts
 
 needs_rsvg = pytest.mark.skipif(shutil.which("rsvg-convert") is None, reason="rsvg-convert is not installed")
 
@@ -34,26 +33,22 @@ def box(shape: Any) -> tuple[int, int, int, int]:
     return shape.left, shape.top, shape.width, shape.height
 
 
-def test_every_slide_has_its_title() -> None:
-    deck = build_deck()
-    presentation, renderer = render(deck)
+def test_every_slide_has_its_title(deck: Deck) -> None:
+    presentation, _ = render(deck)
     assert [page.shapes.title.text_frame.text for page in presentation.slides] == slide_titles(deck)
-    assert renderer.images == 0  # nothing in this deck needs an image
 
 
-def test_plots_share_one_frame() -> None:
+def test_plots_share_one_frame(deck: Deck) -> None:
     """Native plots have the same position and size on every slide, whatever they draw."""
-    deck = build_deck()
     presentation, _ = render(deck)
     groups = plot_groups(presentation, deck)
-    assert len(groups) == 13
+    assert len(groups) >= 2
     assert len({box(group) for group in groups}) == 1
     assert groups[0].width == PLOT_W * 6350 and groups[0].height == PLOT_H * 6350
 
 
 @needs_rsvg
-def test_exported_images_share_the_frame_and_are_transparent() -> None:
-    deck = build_deck()
+def test_exported_images_share_the_frame_and_are_transparent(deck: Deck) -> None:
     presentation, renderer = render(deck, "image")
     assert renderer.images > 0
     pictures = [

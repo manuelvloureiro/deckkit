@@ -1,13 +1,12 @@
-"""The deck: every slide, in order, with its text.
+"""The differential privacy deck: every slide, in order, with its text.
 
-Text uses the inline markup of `richtext.py`: `*x*` for a variable, `**x**` for strong, `^{x}` and
+Text uses the inline markup of `deckkit.richtext`: `*x*` for a variable, `**x**` for strong, `^{x}` and
 `_{x}` for raised and lowered pieces of an equation.
 """
 
 from __future__ import annotations
 
-from dpdeck import plots
-from dpdeck.model import (
+from deckkit.model import (
     Card,
     CardsSlide,
     Cover,
@@ -30,6 +29,8 @@ from dpdeck.model import (
     Term,
     Tight,
 )
+
+from . import plots
 
 GAUSSIAN_DELTA = "*δ* = Φ(Δ/2*σ* − *εσ*/Δ) − *e*^{*ε*} · Φ(−Δ/2*σ* − *εσ*/Δ)"
 SURVEY_HEADER = ("Person", "Smokes?")
@@ -87,14 +88,14 @@ def _why() -> list[Slide]:
             "One person moves the count",
             (
                 DataTable(
-                    KeyLine("d", "*D*: the survey, 19 people"),
+                    KeyLine(plots.ON_D, "*D*: the survey, 19 people"),
                     SURVEY_HEADER,
                     (*SURVEY_ROWS, (" ", " ")),
                     "7",
                     "published: the number of yes",
                 ),
                 DataTable(
-                    KeyLine("dp", "*D′*: the same survey plus Alice"),
+                    KeyLine(plots.ON_DP, "*D′*: the same survey plus Alice"),
                     SURVEY_HEADER,
                     (*SURVEY_ROWS, ("**Alice**", "**yes**")),
                     "8",
@@ -118,8 +119,8 @@ def _why() -> list[Slide]:
             "The promise",
             "With or without any one person, the output looks almost the same.",
             (
-                Node(0, 0, 460, 140, "the data", title="Dataset *D*", key="d"),
-                Node(0, 180, 460, 140, "the same data plus one person", title="Neighbour *D′*", key="dp"),
+                Node(0, 0, 460, 140, "the data", title="Dataset *D*", key=plots.ON_D),
+                Node(0, 180, 460, 140, "the same data plus one person", title="Neighbour *D′*", key=plots.ON_DP),
                 Node(640, 75, 400, 170, "computes the answer, then adds random noise", title="Mechanism *M*"),
                 Node(
                     1220,
@@ -132,9 +133,9 @@ def _why() -> list[Slide]:
             ),
             ((460, 70, 640, 135), (460, 250, 640, 185), (1040, 160, 1220, 160)),
             (
-                Term("Pr[*M*(*D*) ∈ *S*]", "chance the output lands in *S*, on *D*", key="d"),
+                Term("Pr[*M*(*D*) ∈ *S*]", "chance the output lands in *S*, on *D*", key=plots.ON_D),
                 Term("≤ *e*^{*ε*} ·", "“almost the same”"),
-                Term("Pr[*M*(*D′*) ∈ *S*]", "the same chance, on *D′*", key="dp"),
+                Term("Pr[*M*(*D′*) ∈ *S*]", "the same chance, on *D′*", key=plots.ON_DP),
             ),
             "ε-differential privacy: for every pair of neighbours *D*, *D′* and every set of outputs *S*. "
             "The smaller ε, the closer the two.",
@@ -223,9 +224,9 @@ def _basics() -> list[Slide]:
             ),
             "The noise is chosen as the smallest that lets the stretched curve cover.",
             keys=(
-                KeyLine("d", "published count on *D*"),
-                KeyLine("dp", "published count on *D′*"),
-                KeyLine("dash", "orange curve × 2.7, for ε = 1"),
+                KeyLine(plots.ON_D, "published count on *D*"),
+                KeyLine(plots.ON_DP, "published count on *D′*"),
+                KeyLine(plots.DASHED, "orange curve × 2.7, for ε = 1"),
             ),
             compact=True,
         ),

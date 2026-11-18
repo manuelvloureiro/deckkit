@@ -1,7 +1,7 @@
 import pytest
 
-from dpdeck.richtext import Run, equation_html, parse, plain, to_html
-from dpdeck.scene import clip
+from deckkit.richtext import Run, equation_html, parse, plain, to_html
+from deckkit.scene import clip
 
 
 def test_parse_runs() -> None:
